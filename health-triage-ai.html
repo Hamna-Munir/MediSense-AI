@@ -1,0 +1,805 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MediSense AI — Health Triage Assistant</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d0608;
+    --surface: #160b0e;
+    --surface2: #1e0f14;
+    --surface3: #261319;
+    --border: #3a1a22;
+    --border2: #4d2030;
+    --pink: #ff4d8d;
+    --pink-dim: #c23060;
+    --pink-glow: rgba(255,77,141,0.12);
+    --orange: #ff7043;
+    --coral: #ff5c6a;
+    --rose: #ff2d55;
+    --text: #ffe8ef;
+    --text-muted: #b07080;
+    --text-dim: #5a3040;
+    --red: #ff2d55;
+    --yellow: #ffb347;
+    --green: #39d98a;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+  .bg-mesh {
+    position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden;
+  }
+  .bg-mesh::before {
+    content: '';
+    position: absolute;
+    top: -30%; left: -20%;
+    width: 80%; height: 80%;
+    background: radial-gradient(ellipse, rgba(255,77,141,0.09) 0%, transparent 65%);
+    animation: drift1 18s ease-in-out infinite alternate;
+  }
+  .bg-mesh::after {
+    content: '';
+    position: absolute;
+    bottom: -20%; right: -10%;
+    width: 70%; height: 70%;
+    background: radial-gradient(ellipse, rgba(255,112,67,0.08) 0%, transparent 65%);
+    animation: drift2 22s ease-in-out infinite alternate;
+  }
+  .container {
+    max-width: 920px;
+    margin: 0 auto;
+    padding: 44px 24px 100px;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* HEADER */
+  .header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 56px;
+  }
+  .logo { display: flex; align-items: center; gap: 14px; }
+  .logo-icon {
+    width: 46px; height: 46px;
+    background: linear-gradient(135deg, var(--pink), var(--orange));
+    border-radius: 14px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px;
+    box-shadow: 0 8px 24px rgba(255,77,141,0.35);
+    flex-shrink: 0;
+  }
+  .logo-name {
+    font-family: 'Playfair Display', serif;
+    font-size: 24px; font-weight: 900;
+    background: linear-gradient(90deg, var(--pink), var(--orange));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  }
+  .logo-sub {
+    font-size: 9px; color: var(--text-dim);
+    letter-spacing: 3px; text-transform: uppercase; margin-top: 2px;
+  }
+  .header-badge {
+    display: flex; align-items: center; gap: 8px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 24px; padding: 8px 16px;
+    font-size: 11px; color: var(--text-muted); letter-spacing: 0.5px;
+  }
+  .badge-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--pink); box-shadow: 0 0 8px var(--pink);
+    animation: blink 2s ease infinite;
+  }
+
+  /* HERO */
+  .hero {
+    text-align: center; margin-bottom: 52px;
+    animation: fadeUp 0.9s ease both;
+  }
+  .hero-eyebrow {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: var(--pink-glow); border: 1px solid rgba(255,77,141,0.25);
+    border-radius: 20px; padding: 6px 16px;
+    font-size: 11px; color: var(--pink);
+    letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 22px;
+  }
+  .hero h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(38px, 6vw, 62px); font-weight: 900;
+    line-height: 1.08; color: var(--text);
+    margin-bottom: 18px; letter-spacing: -1px;
+  }
+  .hero h1 .grad {
+    background: linear-gradient(90deg, var(--pink) 0%, var(--orange) 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    font-style: italic;
+  }
+  .hero p {
+    font-size: 14px; color: var(--text-muted);
+    line-height: 1.9; max-width: 500px; margin: 0 auto;
+  }
+
+  /* STATS */
+  .stats-row {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    gap: 12px; margin-bottom: 36px;
+    animation: fadeUp 0.9s 0.1s ease both;
+  }
+  .stat-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 14px; padding: 18px 20px; text-align: center;
+  }
+  .stat-num {
+    font-family: 'Playfair Display', serif; font-size: 26px; font-weight: 700;
+    background: linear-gradient(90deg, var(--pink), var(--orange));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  }
+  .stat-label {
+    font-size: 10px; color: var(--text-dim);
+    letter-spacing: 1px; text-transform: uppercase; margin-top: 4px;
+  }
+
+  /* MAIN CARD */
+  .main-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 24px; overflow: hidden;
+    animation: fadeUp 0.9s 0.15s ease both;
+    box-shadow: 0 0 0 1px rgba(255,77,141,0.05), 0 24px 64px rgba(0,0,0,0.5);
+  }
+  .card-tab-row {
+    display: flex; border-bottom: 1px solid var(--border);
+    padding: 0 24px; background: var(--surface2);
+  }
+  .card-tab {
+    padding: 16px 20px; font-size: 11px; font-weight: 600;
+    letter-spacing: 1px; text-transform: uppercase;
+    color: var(--text-dim); border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+  }
+  .card-tab.active { color: var(--pink); border-bottom-color: var(--pink); }
+
+  .section-block { padding: 26px 28px; border-bottom: 1px solid var(--border); }
+
+  .section-title {
+    font-size: 10px; letter-spacing: 2.5px; text-transform: uppercase;
+    color: var(--text-muted); margin-bottom: 18px;
+    display: flex; align-items: center; gap: 10px; font-weight: 600;
+  }
+  .section-title .line {
+    flex: 1; height: 1px;
+    background: linear-gradient(90deg, var(--border), transparent);
+  }
+
+  .patient-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+  .field-group { display: flex; flex-direction: column; gap: 7px; }
+  .field-label {
+    font-size: 10px; letter-spacing: 1px; text-transform: uppercase;
+    color: var(--text-dim); font-weight: 600;
+  }
+  .field-input, .field-select {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 10px; padding: 11px 14px; color: var(--text);
+    font-family: 'Plus Jakarta Sans', sans-serif; font-size: 13px;
+    outline: none; transition: border-color 0.2s, box-shadow 0.2s; width: 100%;
+  }
+  .field-input:focus, .field-select:focus {
+    border-color: var(--pink-dim); box-shadow: 0 0 0 3px rgba(255,77,141,0.08);
+  }
+  .field-select option { background: #1e0f14; }
+
+  .symptom-tags { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 18px; }
+  .symptom-tag {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 22px; padding: 7px 16px;
+    font-size: 12px; color: var(--text-muted);
+    cursor: pointer; transition: all 0.18s; user-select: none; font-weight: 500;
+  }
+  .symptom-tag:hover { border-color: var(--pink-dim); color: var(--pink); background: var(--pink-glow); }
+  .symptom-tag.selected {
+    background: linear-gradient(135deg, rgba(255,77,141,0.18), rgba(255,112,67,0.12));
+    border-color: var(--pink); color: var(--pink);
+    box-shadow: 0 0 12px rgba(255,77,141,0.15);
+  }
+
+  .symptom-textarea {
+    width: 100%; background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 14px; padding: 16px 18px; color: var(--text);
+    font-family: 'Plus Jakarta Sans', sans-serif; font-size: 13px;
+    line-height: 1.8; outline: none; resize: vertical; min-height: 100px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .symptom-textarea:focus { border-color: var(--pink-dim); box-shadow: 0 0 0 3px rgba(255,77,141,0.08); }
+  .symptom-textarea::placeholder { color: var(--text-dim); }
+
+  .meta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 16px; }
+
+  .severity-track { display: flex; gap: 5px; align-items: center; margin-top: 6px; }
+  .severity-dot {
+    flex: 1; height: 7px; border-radius: 4px;
+    background: var(--border); cursor: pointer; transition: all 0.15s;
+  }
+  .severity-dot:hover { opacity: 0.8; transform: scaleY(1.3); }
+
+  .submit-row {
+    padding: 22px 28px; display: flex; align-items: center;
+    justify-content: space-between; gap: 16px; background: var(--surface2);
+  }
+  .disclaimer { font-size: 11px; color: var(--text-dim); line-height: 1.7; max-width: 440px; }
+  .disclaimer strong { color: var(--orange); }
+
+  .btn-analyze {
+    background: linear-gradient(135deg, var(--pink), var(--orange));
+    color: #fff; border: none; border-radius: 14px; padding: 15px 32px;
+    font-family: 'Plus Jakarta Sans', sans-serif; font-size: 14px; font-weight: 700;
+    cursor: pointer; transition: all 0.22s; white-space: nowrap;
+    display: flex; align-items: center; gap: 10px;
+    box-shadow: 0 8px 24px rgba(255,77,141,0.3); flex-shrink: 0;
+  }
+  .btn-analyze:hover { transform: translateY(-2px); box-shadow: 0 14px 36px rgba(255,77,141,0.4); }
+  .btn-analyze:active { transform: translateY(0); }
+  .btn-analyze:disabled { opacity: 0.45; cursor: not-allowed; transform: none; box-shadow: none; }
+
+  .spinner {
+    width: 15px; height: 15px;
+    border: 2.5px solid rgba(255,255,255,0.3);
+    border-top-color: #fff; border-radius: 50%;
+    animation: spin 0.7s linear infinite; display: none;
+  }
+
+  /* RESULT CARD */
+  .result-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 24px; margin-top: 28px; overflow: hidden;
+    display: none; animation: fadeUp 0.5s ease both;
+    box-shadow: 0 0 0 1px rgba(255,77,141,0.06), 0 24px 64px rgba(0,0,0,0.5);
+  }
+  .result-header {
+    padding: 22px 28px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+    background: linear-gradient(135deg, rgba(255,77,141,0.06), rgba(255,112,67,0.04));
+  }
+  .triage-pill {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 18px; border-radius: 30px; border: 1px solid var(--border);
+    font-size: 13px; font-weight: 700;
+  }
+  .triage-dot {
+    width: 10px; height: 10px; border-radius: 50%;
+    animation: pulse 2s ease infinite;
+  }
+  .triage-dot.tgreen { background: var(--green); }
+  .triage-dot.tyellow { background: var(--yellow); }
+  .triage-dot.tred { background: var(--red); box-shadow: 0 0 10px var(--red); }
+
+  .ai-label {
+    font-size: 10px; color: var(--text-dim);
+    letter-spacing: 2px; text-transform: uppercase;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .ai-label::before {
+    content: ''; display: inline-block;
+    width: 18px; height: 1px; background: var(--border2);
+  }
+
+  .result-body { padding: 28px; }
+  .result-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
+
+  .result-section {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 14px; padding: 18px 20px;
+  }
+  .result-section.full { grid-column: 1 / -1; }
+
+  .result-section-title {
+    font-size: 9px; letter-spacing: 2.5px; text-transform: uppercase;
+    color: var(--pink); margin-bottom: 12px; font-weight: 700;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .result-section-title::before {
+    content: ''; width: 3px; height: 12px;
+    background: linear-gradient(to bottom, var(--pink), var(--orange));
+    border-radius: 2px; flex-shrink: 0;
+  }
+  .result-text { font-size: 13px; line-height: 1.85; color: var(--text-muted); }
+
+  .tag-list { display: flex; flex-wrap: wrap; gap: 8px; }
+  .info-tag {
+    background: var(--surface3); border: 1px solid var(--border2);
+    border-radius: 8px; padding: 5px 13px; font-size: 11px;
+    color: var(--text-muted); font-weight: 500;
+  }
+  .urgent-banner {
+    background: linear-gradient(135deg, rgba(255,45,85,0.12), rgba(255,77,141,0.08));
+    border: 1px solid rgba(255,45,85,0.35);
+    border-radius: 12px; padding: 16px 18px;
+    font-size: 13px; color: var(--red); line-height: 1.7;
+    margin-top: 4px; font-weight: 500; grid-column: 1 / -1;
+  }
+
+  /* CHAT */
+  .followup-box { margin-top: 24px; border-top: 1px solid var(--border); padding-top: 24px; }
+  .chat-messages {
+    display: flex; flex-direction: column; gap: 10px;
+    margin-top: 14px; max-height: 280px; overflow-y: auto; padding-right: 4px;
+  }
+  .chat-messages::-webkit-scrollbar { width: 4px; }
+  .chat-messages::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+  .chat-msg {
+    padding: 12px 16px; border-radius: 12px;
+    font-size: 13px; line-height: 1.75; animation: fadeUp 0.3s ease;
+  }
+  .chat-msg.user {
+    background: linear-gradient(135deg, rgba(255,77,141,0.15), rgba(255,112,67,0.1));
+    border: 1px solid rgba(255,77,141,0.2); color: var(--pink);
+    align-self: flex-end; max-width: 80%;
+  }
+  .chat-msg.ai {
+    background: var(--surface2); border: 1px solid var(--border);
+    color: var(--text-muted); max-width: 92%;
+  }
+  .typing-indicator {
+    display: flex; gap: 5px; padding: 14px 16px;
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 12px; width: fit-content;
+  }
+  .typing-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--text-dim); animation: bounce 1.2s ease infinite;
+  }
+  .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+  .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+
+  .followup-input-wrap { display: flex; gap: 10px; margin-top: 12px; }
+  .followup-input {
+    flex: 1; background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 12px; padding: 12px 16px; color: var(--text);
+    font-family: 'Plus Jakarta Sans', sans-serif; font-size: 13px; outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .followup-input:focus { border-color: var(--pink-dim); box-shadow: 0 0 0 3px rgba(255,77,141,0.08); }
+  .followup-input::placeholder { color: var(--text-dim); }
+  .btn-send {
+    background: linear-gradient(135deg, var(--pink), var(--orange));
+    border: none; border-radius: 12px; padding: 12px 20px;
+    color: #fff; font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 13px; font-weight: 700; cursor: pointer; transition: all 0.2s;
+    box-shadow: 0 4px 14px rgba(255,77,141,0.25); white-space: nowrap;
+  }
+  .btn-send:hover { transform: translateY(-1px); box-shadow: 0 8px 20px rgba(255,77,141,0.35); }
+
+  /* FOOTER */
+  .footer {
+    text-align: center; padding: 48px 0 0;
+    font-size: 10px; color: var(--text-dim);
+    letter-spacing: 2px; text-transform: uppercase; line-height: 2.2;
+  }
+  .footer span { color: var(--pink-dim); }
+  .footer-line {
+    width: 60px; height: 1px;
+    background: linear-gradient(90deg, transparent, var(--border2), transparent);
+    margin: 0 auto 20px;
+  }
+
+  /* ANIMATIONS */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(18px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @keyframes pulse {
+    0%,100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.4); opacity: 0.6; }
+  }
+  @keyframes blink { 0%,100% { opacity:1; } 50% { opacity:0.3; } }
+  @keyframes bounce {
+    0%,80%,100% { transform: translateY(0); }
+    40% { transform: translateY(-7px); }
+  }
+  @keyframes drift1 {
+    from { transform: translate(0,0) scale(1); }
+    to { transform: translate(5%,8%) scale(1.1); }
+  }
+  @keyframes drift2 {
+    from { transform: translate(0,0) scale(1); }
+    to { transform: translate(-4%,-6%) scale(1.08); }
+  }
+
+  @media (max-width: 640px) {
+    .patient-grid { grid-template-columns: 1fr 1fr; }
+    .result-grid { grid-template-columns: 1fr; }
+    .submit-row { flex-direction: column; align-items: stretch; }
+    .btn-analyze { justify-content: center; }
+    .stats-row { grid-template-columns: 1fr; gap: 8px; }
+    .header-badge { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="bg-mesh"></div>
+
+<div class="container">
+
+  <header class="header">
+    <div class="logo">
+      <div class="logo-icon">🩺</div>
+      <div>
+        <div class="logo-name">MediSense AI</div>
+        <div class="logo-sub">Health Triage Intelligence</div>
+      </div>
+    </div>
+    <div class="header-badge">
+      <div class="badge-dot"></div>
+      AI Active · Groq LLaMA 3.3
+    </div>
+  </header>
+
+  <div class="hero">
+    <div class="hero-eyebrow">✦ Gemma 4 Good Hackathon 2026</div>
+    <h1>Intelligent triage for<br><span class="grad">every community.</span></h1>
+    <p>Describe your symptoms and receive AI-powered preliminary health guidance — built for clinics, community health workers, and regions without easy access to doctors.</p>
+  </div>
+
+  <div class="stats-row">
+    <div class="stat-card">
+      <div class="stat-num">4.5B+</div>
+      <div class="stat-label">Without Primary Care</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num">&lt;10s</div>
+      <div class="stat-label">Triage Response Time</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num">4</div>
+      <div class="stat-label">Urgency Levels</div>
+    </div>
+  </div>
+
+  <div class="main-card">
+    <div class="card-tab-row">
+      <div class="card-tab active">Patient Intake</div>
+      <div class="card-tab">Symptoms</div>
+      <div class="card-tab">Analysis</div>
+    </div>
+
+    <div class="section-block">
+      <div class="section-title">Patient Information <div class="line"></div></div>
+      <div class="patient-grid">
+        <div class="field-group">
+          <div class="field-label">Age</div>
+          <input type="number" class="field-input" id="age" placeholder="e.g. 34" min="0" max="120">
+        </div>
+        <div class="field-group">
+          <div class="field-label">Biological Sex</div>
+          <select class="field-select" id="sex">
+            <option value="">Select</option>
+            <option>Male</option>
+            <option>Female</option>
+            <option>Other</option>
+          </select>
+        </div>
+        <div class="field-group">
+          <div class="field-label">Medical History</div>
+          <input type="text" class="field-input" id="history" placeholder="e.g. Diabetes, HTN">
+        </div>
+      </div>
+    </div>
+
+    <div class="section-block">
+      <div class="section-title">Current Symptoms <div class="line"></div></div>
+      <div class="symptom-tags">
+        <div class="symptom-tag" onclick="toggleTag(this)">🌡 Fever</div>
+        <div class="symptom-tag" onclick="toggleTag(this)">🤕 Headache</div>
+        <div class="symptom-tag" onclick="toggleTag(this)">😮‍💨 Cough</div>
+        <div class="symptom-tag" onclick="toggleTag(this)">💔 Chest Pain</div>
+        <div class="symptom-tag" onclick="toggleTag(this)">😮 Shortness of Breath</div>
+        <div class="symptom-tag" onclick="toggleTag(this)">🤢 Nausea / Vomiting</div>
+        <div class="symptom-tag" onclick="toggleTag(this)">💫 Dizziness</div>
+        <div class="symptom-tag" onclick="toggleTag(this)">😴 Fatigue</div>
+        <div class="symptom-tag" onclick="toggleTag(this)">🫃 Abdominal Pain</div>
+        <div class="symptom-tag" onclick="toggleTag(this)">🔴 Rash / Skin Changes</div>
+        <div class="symptom-tag" onclick="toggleTag(this)">🗣 Sore Throat</div>
+        <div class="symptom-tag" onclick="toggleTag(this)">🦴 Joint / Muscle Pain</div>
+        <div class="symptom-tag" onclick="toggleTag(this)">👁 Vision Changes</div>
+        <div class="symptom-tag" onclick="toggleTag(this)">🔙 Back Pain</div>
+      </div>
+      <textarea class="symptom-textarea" id="symptomText" placeholder="Describe your symptoms in detail... (e.g. sharp chest pain radiating to left arm, started 2 hours ago after physical exertion, worsens when breathing deeply)"></textarea>
+      <div class="meta-grid">
+        <div class="field-group">
+          <div class="field-label">Duration of Symptoms</div>
+          <select class="field-select" id="duration">
+            <option value="">How long?</option>
+            <option>Less than 1 hour</option>
+            <option>A few hours</option>
+            <option>1–3 days</option>
+            <option>4–7 days</option>
+            <option>1–2 weeks</option>
+            <option>More than 2 weeks</option>
+          </select>
+        </div>
+        <div class="field-group">
+          <div class="field-label">Pain / Severity (1 mild → 10 severe)</div>
+          <div class="severity-track" id="severityTrack"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="submit-row">
+      <p class="disclaimer">
+        <strong>⚠ Not a medical diagnosis.</strong> This AI provides preliminary guidance only. Always consult a qualified healthcare professional for medical decisions.
+      </p>
+      <button class="btn-analyze" id="analyzeBtn" onclick="analyze()">
+        <div class="spinner" id="spinner"></div>
+        <span id="btnText">Analyze Symptoms</span>
+        <span>→</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Result -->
+  <div class="result-card" id="resultCard">
+    <div class="result-header">
+      <div class="triage-pill" id="triagePill">
+        <div class="triage-dot tgreen" id="triageDot"></div>
+        <span id="triageLevelText">Triage Assessment</span>
+      </div>
+      <div class="ai-label">Preliminary AI Analysis</div>
+    </div>
+    <div class="result-body">
+      <div class="result-grid">
+        <div class="result-section full">
+          <div class="result-section-title">Clinical Summary</div>
+          <div class="result-text" id="summaryText"></div>
+        </div>
+        <div class="result-section">
+          <div class="result-section-title">Possible Conditions</div>
+          <div class="tag-list" id="conditionsList"></div>
+        </div>
+        <div class="result-section">
+          <div class="result-section-title">Red Flags to Watch</div>
+          <div class="result-text" id="redFlagsText"></div>
+        </div>
+        <div class="result-section full">
+          <div class="result-section-title">Recommended Next Steps</div>
+          <div class="result-text" id="stepsText"></div>
+        </div>
+        <div id="urgentBanner" class="urgent-banner" style="display:none;"></div>
+      </div>
+
+      <div class="followup-box">
+        <div class="section-title">Ask a Follow-up Question <div class="line"></div></div>
+        <div class="chat-messages" id="chatMessages"></div>
+        <div class="followup-input-wrap">
+          <input type="text" class="followup-input" id="followupInput"
+            placeholder="e.g. Should I avoid certain foods? Is this serious?..."
+            onkeydown="if(event.key==='Enter') sendFollowup()">
+          <button class="btn-send" onclick="sendFollowup()">Send →</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">
+    <div class="footer-line"></div>
+    <span>MediSense AI</span> · For Educational & Research Use Only<br>
+    Not a substitute for professional medical advice · <span>Gemma 4 Good Hackathon 2026</span>
+  </div>
+
+</div>
+
+<script>
+  // ── DEVELOPER: Set your Groq API key here ──────────
+  const GROQ_API_KEY = 'YOUR_GROQ_API_KEY_HERE';
+  // ───────────────────────────────────────────────────
+
+  let severity = 0;
+  let conversationHistory = [];
+
+  // Severity dots
+  const severityTrack = document.getElementById('severityTrack');
+  for (let i = 1; i <= 10; i++) {
+    const dot = document.createElement('div');
+    dot.className = 'severity-dot';
+    dot.title = `Severity: ${i}`;
+    dot.onclick = () => setSeverity(i);
+    severityTrack.appendChild(dot);
+  }
+
+  function setSeverity(val) {
+    severity = val;
+    severityTrack.querySelectorAll('.severity-dot').forEach((d, i) => {
+      if (i < val) {
+        d.style.background = i < 3 ? '#39d98a' : i < 6 ? '#ffb347' : '#ff2d55';
+        d.style.boxShadow = i < 3 ? '0 0 6px rgba(57,217,138,0.5)' : i < 6 ? '0 0 6px rgba(255,179,71,0.5)' : '0 0 6px rgba(255,45,85,0.5)';
+      } else {
+        d.style.background = 'var(--border)';
+        d.style.boxShadow = 'none';
+      }
+    });
+  }
+
+  function toggleTag(el) { el.classList.toggle('selected'); }
+
+  function getSelectedTags() {
+    return [...document.querySelectorAll('.symptom-tag.selected')]
+      .map(t => t.textContent.trim().replace(/^\S+\s/, ''));
+  }
+
+  async function callGroq(messages, systemPrompt) {
+    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${GROQ_API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: 'llama-3.3-70b-versatile',
+        temperature: 0.3,
+        max_tokens: 1200,
+        messages: [{ role: 'system', content: systemPrompt }, ...messages]
+      })
+    });
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error(err.error?.message || `HTTP ${response.status}`);
+    }
+    const data = await response.json();
+    return data.choices[0].message.content;
+  }
+
+  async function analyze() {
+    const age = document.getElementById('age').value;
+    const sex = document.getElementById('sex').value;
+    const history = document.getElementById('history').value;
+    const symptomText = document.getElementById('symptomText').value;
+    const selectedTags = getSelectedTags();
+    const duration = document.getElementById('duration').value;
+
+    if (!symptomText && selectedTags.length === 0) {
+      alert('Please describe your symptoms or select from the tags above.');
+      return;
+    }
+
+    const btn = document.getElementById('analyzeBtn');
+    btn.disabled = true;
+    document.getElementById('spinner').style.display = 'block';
+    document.getElementById('btnText').textContent = 'Analyzing...';
+
+    const patientInfo = [
+      age ? `Age: ${age}` : '',
+      sex ? `Sex: ${sex}` : '',
+      history ? `Medical History: ${history}` : '',
+      selectedTags.length ? `Selected symptoms: ${selectedTags.join(', ')}` : '',
+      symptomText ? `Additional description: ${symptomText}` : '',
+      duration ? `Duration: ${duration}` : '',
+      severity ? `Severity (1-10): ${severity}` : ''
+    ].filter(Boolean).join('\n');
+
+    const systemPrompt = `You are MediSense, an expert AI medical triage assistant for community health workers and underserved regions. You are NOT a replacement for a doctor.
+
+Respond ONLY with a valid JSON object — no markdown, no code blocks, no extra text.
+
+JSON format:
+{
+  "triage": "LOW" | "MODERATE" | "HIGH" | "EMERGENCY",
+  "triageLabel": "Non-Urgent / Monitor at Home | See a Doctor Today | Seek Immediate Care | Call Emergency Services Now",
+  "summary": "2-3 sentence clinical summary",
+  "conditions": ["Condition 1", "Condition 2", "Condition 3"],
+  "steps": "• Step 1\\n• Step 2\\n• Step 3",
+  "redFlags": "• Flag 1\\n• Flag 2\\n• Flag 3",
+  "urgent": "If EMERGENCY: short urgent action message. Otherwise: empty string"
+}`;
+
+    const userMsg = `Please triage this patient:\n${patientInfo}`;
+
+    try {
+      const raw = await callGroq([{ role: 'user', content: userMsg }], systemPrompt);
+      conversationHistory = [
+        { role: 'user', content: userMsg },
+        { role: 'assistant', content: raw }
+      ];
+      const result = JSON.parse(raw.replace(/```json|```/g, '').trim());
+      renderResult(result);
+    } catch (e) {
+      alert('Analysis failed: ' + e.message);
+    } finally {
+      btn.disabled = false;
+      document.getElementById('spinner').style.display = 'none';
+      document.getElementById('btnText').textContent = 'Analyze Symptoms';
+    }
+  }
+
+  function renderResult(r) {
+    const card = document.getElementById('resultCard');
+    card.style.display = 'block';
+    setTimeout(() => card.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80);
+
+    const dot = document.getElementById('triageDot');
+    const label = document.getElementById('triageLevelText');
+    const pill = document.getElementById('triagePill');
+    dot.className = 'triage-dot';
+
+    const map = {
+      LOW:       { cls: 'tgreen',  color: '#39d98a', bg: 'rgba(57,217,138,0.08)',  border: 'rgba(57,217,138,0.25)' },
+      MODERATE:  { cls: 'tyellow', color: '#ffb347', bg: 'rgba(255,179,71,0.08)', border: 'rgba(255,179,71,0.25)' },
+      HIGH:      { cls: 'tyellow', color: '#ff7043', bg: 'rgba(255,112,67,0.08)', border: 'rgba(255,112,67,0.25)' },
+      EMERGENCY: { cls: 'tred',    color: '#ff2d55', bg: 'rgba(255,45,85,0.1)',   border: 'rgba(255,45,85,0.35)' }
+    };
+    const m = map[r.triage] || map.LOW;
+    dot.classList.add(m.cls);
+    label.textContent = r.triageLabel || r.triage;
+    label.style.color = m.color;
+    pill.style.background = m.bg;
+    pill.style.borderColor = m.border;
+
+    document.getElementById('summaryText').textContent = r.summary || '';
+    document.getElementById('stepsText').innerHTML = (r.steps || '').replace(/\n/g, '<br>');
+    document.getElementById('redFlagsText').innerHTML = (r.redFlags || '').replace(/\n/g, '<br>');
+
+    const cl = document.getElementById('conditionsList');
+    cl.innerHTML = '';
+    (r.conditions || []).forEach(c => {
+      const tag = document.createElement('div');
+      tag.className = 'info-tag';
+      tag.textContent = c;
+      cl.appendChild(tag);
+    });
+
+    const banner = document.getElementById('urgentBanner');
+    if (r.urgent) { banner.textContent = '🚨 ' + r.urgent; banner.style.display = 'block'; }
+    else banner.style.display = 'none';
+
+    document.getElementById('chatMessages').innerHTML = '';
+    document.getElementById('followupInput').value = '';
+  }
+
+  async function sendFollowup() {
+    const input = document.getElementById('followupInput');
+    const question = input.value.trim();
+    if (!question) return;
+    input.value = '';
+
+    const chatBox = document.getElementById('chatMessages');
+
+    const userBubble = document.createElement('div');
+    userBubble.className = 'chat-msg user';
+    userBubble.textContent = question;
+    chatBox.appendChild(userBubble);
+
+    const typing = document.createElement('div');
+    typing.className = 'typing-indicator';
+    typing.innerHTML = '<div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div>';
+    chatBox.appendChild(typing);
+    chatBox.scrollTop = chatBox.scrollHeight;
+
+    const systemPrompt = `You are MediSense, a compassionate AI health assistant. The patient has already received a triage assessment. Answer follow-up questions clearly in 2–4 sentences. Always recommend seeing a real doctor. Never diagnose. Be warm and empathetic.`;
+    conversationHistory.push({ role: 'user', content: question });
+
+    try {
+      const reply = await callGroq(conversationHistory, systemPrompt);
+      conversationHistory.push({ role: 'assistant', content: reply });
+      typing.remove();
+      const aiBubble = document.createElement('div');
+      aiBubble.className = 'chat-msg ai';
+      aiBubble.textContent = reply;
+      chatBox.appendChild(aiBubble);
+      chatBox.scrollTop = chatBox.scrollHeight;
+    } catch(e) {
+      typing.remove();
+      const errBubble = document.createElement('div');
+      errBubble.className = 'chat-msg ai';
+      errBubble.textContent = 'Error: ' + e.message;
+      chatBox.appendChild(errBubble);
+    }
+  }
+</script>
+</body>
+</html>
